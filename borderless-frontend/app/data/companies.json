@@ -7,9 +7,9 @@
   },
   {
     "id": "supplier1",
-    "name": "Ship Supplies Co.",
+    "name": "Dollar Border Ship Supplies Co.",
     "type": "supplier",
-    "wallet": "0x2345678901234567890123456789012345678901"
+    "wallet": "0xCFdC608A2AC9F0D82e67F35DbCCaB06252430d64"
   },
   {
     "id": "charter1",
