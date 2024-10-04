@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FaShip, FaUserCircle, FaPlus, FaEdit, FaTrash } from "react-icons/fa";
+import {
+  FaShip,
+  FaUserCircle,
+  FaPlus,
+  FaEdit,
+  FaTrash,
+  FaCoins,
+} from "react-icons/fa";
 
 interface Company {
   id: string;
@@ -14,10 +21,14 @@ export default function AdminDashboard() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isMintDialogOpen, setIsMintDialogOpen] = useState(false);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
   const [newCompany, setNewCompany] = useState<Partial<Company>>({
     type: "agent",
   });
+  const [mintAmount, setMintAmount] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   useEffect(() => {
     fetchCompanies();
@@ -31,6 +42,7 @@ export default function AdminDashboard() {
       setCompanies(data);
     } catch (error) {
       console.error("Error fetching companies:", error);
+      setError("Failed to fetch companies");
     }
   };
 
@@ -46,8 +58,10 @@ export default function AdminDashboard() {
         await fetchCompanies();
         setNewCompany({ type: "agent" });
         setIsAddDialogOpen(false);
+        setSuccess("Company added successfully");
       } catch (error) {
         console.error("Error adding company:", error);
+        setError("Failed to add company");
       }
     }
   };
@@ -63,8 +77,10 @@ export default function AdminDashboard() {
         if (!response.ok) throw new Error("Failed to update company");
         await fetchCompanies();
         setIsEditDialogOpen(false);
+        setSuccess("Company updated successfully");
       } catch (error) {
         console.error("Error updating company:", error);
+        setError("Failed to update company");
       }
     }
   };
@@ -76,13 +92,40 @@ export default function AdminDashboard() {
       });
       if (!response.ok) throw new Error("Failed to delete company");
       await fetchCompanies();
+      setSuccess("Company deleted successfully");
     } catch (error) {
       console.error("Error deleting company:", error);
+      setError("Failed to delete company");
+    }
+  };
+
+  const handleMintTokens = async () => {
+    if (currentCompany && mintAmount) {
+      try {
+        const response = await fetch("/api/mint", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            address: currentCompany.wallet,
+            amount: mintAmount,
+          }),
+        });
+        if (!response.ok) throw new Error("Failed to mint tokens");
+        const data = await response.json();
+        setIsMintDialogOpen(false);
+        setMintAmount("");
+        setSuccess(
+          `Successfully minted ${mintAmount} tokens to ${currentCompany.name}. Transaction hash: ${data.txHash}`
+        );
+      } catch (error) {
+        console.error("Error minting tokens:", error);
+        setError("Failed to mint tokens");
+      }
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100">
       <nav className="bg-blue-600 p-4 shadow-md">
         <div className="container mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -105,51 +148,84 @@ export default function AdminDashboard() {
           </h1>
           <button
             onClick={() => setIsAddDialogOpen(true)}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded inline-flex items-center"
+            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded inline-flex items-center transition duration-150 ease-in-out"
           >
             <FaPlus className="mr-2" /> Add Company
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white">
+        {error && (
+          <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="mb-4 p-2 bg-green-100 text-green-700 rounded">
+            {success}
+          </div>
+        )}
+
+        <div className="overflow-x-auto bg-white shadow-md rounded-lg">
+          <table className="min-w-full leading-normal">
             <thead>
-              <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
-                <th className="py-3 px-6 text-left">Name</th>
-                <th className="py-3 px-6 text-left">Type</th>
-                <th className="py-3 px-6 text-left">Wallet</th>
-                <th className="py-3 px-6 text-center">Actions</th>
+              <tr>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Name
+                </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Type
+                </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Wallet
+                </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
-            <tbody className="text-gray-600 text-sm font-light">
+            <tbody>
               {companies.map((company) => (
-                <tr
-                  key={company.id}
-                  className="border-b border-gray-200 hover:bg-gray-100"
-                >
-                  <td className="py-3 px-6 text-left whitespace-nowrap">
-                    {company.name}
+                <tr key={company.id}>
+                  <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                    <p className="text-gray-900 whitespace-no-wrap">
+                      {company.name}
+                    </p>
                   </td>
-                  <td className="py-3 px-6 text-left">{company.type}</td>
-                  <td className="py-3 px-6 text-left">{company.wallet}</td>
-                  <td className="py-3 px-6 text-center">
-                    <div className="flex item-center justify-center">
-                      <button
-                        onClick={() => {
-                          setCurrentCompany(company);
-                          setIsEditDialogOpen(true);
-                        }}
-                        className="w-4 mr-2 transform hover:text-purple-500 hover:scale-110"
-                      >
-                        <FaEdit />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCompany(company.id)}
-                        className="w-4 mr-2 transform hover:text-red-500 hover:scale-110"
-                      >
-                        <FaTrash />
-                      </button>
-                    </div>
+                  <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                    <p className="text-gray-900 whitespace-no-wrap capitalize">
+                      {company.type}
+                    </p>
+                  </td>
+                  <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                    <p className="text-gray-900 whitespace-no-wrap">
+                      {company.wallet}
+                    </p>
+                  </td>
+                  <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                    <button
+                      onClick={() => {
+                        setCurrentCompany(company);
+                        setIsEditDialogOpen(true);
+                      }}
+                      className="text-blue-600 hover:text-blue-900 mr-3"
+                    >
+                      <FaEdit />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCompany(company.id)}
+                      className="text-red-600 hover:text-red-900 mr-3"
+                    >
+                      <FaTrash />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCurrentCompany(company);
+                        setIsMintDialogOpen(true);
+                      }}
+                      className="text-green-600 hover:text-green-900"
+                    >
+                      <FaCoins />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -287,6 +363,51 @@ export default function AdminDashboard() {
                   id="cancel-btn"
                   className="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
                   onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isMintDialogOpen && currentCompany && (
+        <div
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full"
+          id="my-modal"
+        >
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3 text-center">
+              <h3 className="text-lg leading-6 font-medium text-gray-900">
+                Mint Tokens
+              </h3>
+              <div className="mt-2 px-7 py-3">
+                <p className="text-sm text-gray-500 mb-3">
+                  Minting tokens for {currentCompany.name}
+                </p>
+                <input
+                  type="number"
+                  className="px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-sky-500 block w-full rounded-md sm:text-sm focus:ring-1 mb-3"
+                  placeholder="Amount of tokens to mint"
+                  value={mintAmount}
+                  onChange={(e) => setMintAmount(e.target.value)}
+                />
+              </div>
+              <div className="items-center px-4 py-3">
+                <button
+                  id="ok-btn"
+                  className="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-300"
+                  onClick={handleMintTokens}
+                >
+                  Mint Tokens
+                </button>
+              </div>
+              <div className="items-center px-4 py-3">
+                <button
+                  id="cancel-btn"
+                  className="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                  onClick={() => setIsMintDialogOpen(false)}
                 >
                   Cancel
                 </button>
