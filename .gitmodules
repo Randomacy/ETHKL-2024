@@ -4,3 +4,6 @@
 [submodule "manta-stablecoin-contract/lib/openzeppelin-contracts"]
 	path = manta-stablecoin-contract/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "manta-stablecoin-contract-v2/lib/forge-std"]
+	path = manta-stablecoin-contract-v2/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
