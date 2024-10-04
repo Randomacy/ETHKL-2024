@@ -9,11 +9,19 @@ import {
   FaUserTie,
 } from "react-icons/fa";
 
+interface Company {
+  id: string;
+  name: string;
+  type: string;
+  wallet: string;
+}
+
 export default function BorderlessMaritimeFinance() {
   const [balance, setBalance] = useState("0.00");
   const [amount, setAmount] = useState("");
   const [recipient, setRecipient] = useState("");
   const [transactionType, setTransactionType] = useState("exchange");
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [transactions, setTransactions] = useState([
     {
       id: 1,
@@ -41,6 +49,7 @@ export default function BorderlessMaritimeFinance() {
       );
       if (!response.ok) throw new Error("Failed to fetch balance");
       const data = await response.json();
+      console.log("Account has:", data.balance);
       setBalance(data.balance); // Sets the balance in two decimal places
     } catch (error) {
       console.error("Error fetching balance:", error);
@@ -50,7 +59,20 @@ export default function BorderlessMaritimeFinance() {
   // Fetch balance on component mount
   useEffect(() => {
     fetchBalance();
-  }, []);
+    fetchCompanies();
+  }, [transactionType]);
+
+  const fetchCompanies = async () => {
+    let type = "";
+    if (transactionType === "pay") {
+      type = "supplier";
+    } else if (transactionType === "exchange") {
+      type = "agent";
+    }
+    const response = await fetch(`/api/transaction?type=${type}`);
+    const data = await response.json();
+    setCompanies(data);
+  };
 
   const handleTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,13 +85,6 @@ export default function BorderlessMaritimeFinance() {
     }
 
     try {
-      // Simulating an API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Update balance (in a real app, this would come from the API response)
-      const newBalance = (parseFloat(balance) - parseFloat(amount)).toFixed(2);
-      setBalance(newBalance);
-
       // Add new transaction to history
       const newTransaction = {
         id: transactions.length + 1,
@@ -187,21 +202,32 @@ export default function BorderlessMaritimeFinance() {
                 {transactionType === "pay" && "Ship Supplier"}
                 {transactionType === "redeem" && "Your Bank Account"}
               </label>
-              <input
-                id="recipient"
-                type="text"
-                value={recipient}
-                onChange={(e) => setRecipient(e.target.value)}
-                placeholder={`Enter ${
-                  transactionType === "exchange"
-                    ? "Borderless account"
-                    : transactionType === "pay"
-                    ? "supplier's account"
-                    : "your bank account"
-                }`}
-                required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              {transactionType === "exchange" || transactionType === "pay" ? (
+                <select
+                  id="recipient"
+                  value={recipient}
+                  onChange={(e) => setRecipient(e.target.value)}
+                  required
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="">Select a company</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  id="recipient"
+                  type="text"
+                  value={recipient}
+                  onChange={(e) => setRecipient(e.target.value)}
+                  placeholder="Enter your bank account"
+                  required
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              )}
             </div>
             <button
               type="submit"
