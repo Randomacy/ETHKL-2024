@@ -1,55 +1,98 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { FaShip, FaUserCircle, FaExchangeAlt, FaMoneyBillWave, FaUserTie } from 'react-icons/fa'
+import { useState, useEffect } from "react";
+import {
+  FaShip,
+  FaUserCircle,
+  FaExchangeAlt,
+  FaMoneyBillWave,
+  FaUserTie,
+} from "react-icons/fa";
 
 export default function BorderlessMaritimeFinance() {
-  const [balance, setBalance] = useState("10000.00")
-  const [amount, setAmount] = useState("")
-  const [recipient, setRecipient] = useState("")
-  const [transactionType, setTransactionType] = useState("exchange")
+  const [balance, setBalance] = useState("0.00");
+  const [amount, setAmount] = useState("");
+  const [recipient, setRecipient] = useState("");
+  const [transactionType, setTransactionType] = useState("exchange");
   const [transactions, setTransactions] = useState([
-    { id: 1, date: "2024-04-10", amount: "5000.00", type: "Received from Ship Charter", status: "Completed" },
-    { id: 2, date: "2024-04-09", amount: "3000.00", type: "Paid to Ship Supplier", status: "Completed" },
-  ])
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState("")
+    {
+      id: 1,
+      date: "2024-04-10",
+      amount: "5000.00",
+      type: "Received from Ship Charter",
+      status: "Completed",
+    },
+    {
+      id: 2,
+      date: "2024-04-09",
+      amount: "3000.00",
+      type: "Paid to Ship Supplier",
+      status: "Completed",
+    },
+  ]);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // API to fetch balance
+  const fetchBalance = async () => {
+    try {
+      const response = await fetch(
+        `/api/transaction?action=balance&address=0x529354De2CAAcBB8Fa5f4A2F24Bf586427b8da5E`
+      );
+      if (!response.ok) throw new Error("Failed to fetch balance");
+      const data = await response.json();
+      setBalance(data.balance); // Sets the balance in two decimal places
+    } catch (error) {
+      console.error("Error fetching balance:", error);
+    }
+  };
+
+  // Fetch balance on component mount
+  useEffect(() => {
+    fetchBalance();
+  }, []);
 
   const handleTransaction = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setSuccess("")
+    e.preventDefault();
+    setError("");
+    setSuccess("");
 
     if (parseFloat(amount) <= 0) {
-      setError("Amount must be greater than zero")
-      return
+      setError("Amount must be greater than zero");
+      return;
     }
 
     try {
       // Simulating an API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       // Update balance (in a real app, this would come from the API response)
-      const newBalance = (parseFloat(balance) - parseFloat(amount)).toFixed(2)
-      setBalance(newBalance)
+      const newBalance = (parseFloat(balance) - parseFloat(amount)).toFixed(2);
+      setBalance(newBalance);
 
       // Add new transaction to history
       const newTransaction = {
         id: transactions.length + 1,
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString().split("T")[0],
         amount: amount,
-        type: `${transactionType === 'exchange' ? 'Exchanged' : transactionType === 'pay' ? 'Paid to' : 'Redeemed'} ${recipient}`,
-        status: "Completed"
-      }
-      setTransactions([newTransaction, ...transactions])
+        type: `${
+          transactionType === "exchange"
+            ? "Exchanged"
+            : transactionType === "pay"
+            ? "Paid to"
+            : "Redeemed"
+        } ${recipient}`,
+        status: "Completed",
+      };
+      setTransactions([newTransaction, ...transactions]);
 
-      setSuccess("Transaction completed successfully")
-      setAmount("")
-      setRecipient("")
+      setSuccess("Transaction completed successfully");
+      setAmount("");
+      setRecipient("");
     } catch (err) {
-      setError("Transaction failed. Please try again.")
+      setError("Transaction failed. Please try again.");
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -57,7 +100,9 @@ export default function BorderlessMaritimeFinance() {
         <div className="container mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <FaShip className="h-8 w-8 text-white" />
-            <span className="text-xl font-bold text-white">Borderless Maritime Finance</span>
+            <span className="text-xl font-bold text-white">
+              Borderless Maritime Finance
+            </span>
           </div>
           <div className="flex items-center space-x-4">
             <FaUserCircle className="h-8 w-8 text-white" />
@@ -69,22 +114,37 @@ export default function BorderlessMaritimeFinance() {
       <main className="container mx-auto mt-8 px-4">
         <div className="grid gap-8 md:grid-cols-2">
           <div className="rounded-lg bg-white p-6 shadow-md">
-            <h2 className="mb-4 text-xl font-semibold text-gray-800">Account Balance</h2>
-            <div className="text-3xl font-bold text-blue-600">${balance} USD</div>
+            <h2 className="mb-4 text-xl font-semibold text-gray-800">
+              Account Balance
+            </h2>
+            <div className="text-3xl font-bold text-blue-600">
+              ${balance} USD
+            </div>
           </div>
 
           <div className="rounded-lg bg-white p-6 shadow-md">
-            <h2 className="mb-4 text-xl font-semibold text-gray-800">Quick Actions</h2>
+            <h2 className="mb-4 text-xl font-semibold text-gray-800">
+              Quick Actions
+            </h2>
             <div className="flex justify-around">
-              <button onClick={() => setTransactionType("exchange")} className="flex flex-col items-center p-2 hover:bg-gray-100 rounded">
+              <button
+                onClick={() => setTransactionType("exchange")}
+                className="flex flex-col items-center p-2 hover:bg-gray-100 rounded"
+              >
                 <FaExchangeAlt className="h-8 w-8 text-blue-500 mb-2" />
                 <span>Exchange</span>
               </button>
-              <button onClick={() => setTransactionType("pay")} className="flex flex-col items-center p-2 hover:bg-gray-100 rounded">
+              <button
+                onClick={() => setTransactionType("pay")}
+                className="flex flex-col items-center p-2 hover:bg-gray-100 rounded"
+              >
                 <FaMoneyBillWave className="h-8 w-8 text-green-500 mb-2" />
                 <span>Pay Supplier</span>
               </button>
-              <button onClick={() => setTransactionType("redeem")} className="flex flex-col items-center p-2 hover:bg-gray-100 rounded">
+              <button
+                onClick={() => setTransactionType("redeem")}
+                className="flex flex-col items-center p-2 hover:bg-gray-100 rounded"
+              >
                 <FaUserTie className="h-8 w-8 text-purple-500 mb-2" />
                 <span>Redeem Fiat</span>
               </button>
@@ -102,7 +162,10 @@ export default function BorderlessMaritimeFinance() {
           {success && <div className="mb-4 text-green-500">{success}</div>}
           <form onSubmit={handleTransaction} className="space-y-4">
             <div>
-              <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="amount"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Amount (USD)
               </label>
               <input
@@ -116,7 +179,10 @@ export default function BorderlessMaritimeFinance() {
               />
             </div>
             <div>
-              <label htmlFor="recipient" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="recipient"
+                className="block text-sm font-medium text-gray-700"
+              >
                 {transactionType === "exchange" && "Borderless Account"}
                 {transactionType === "pay" && "Ship Supplier"}
                 {transactionType === "redeem" && "Your Bank Account"}
@@ -126,7 +192,13 @@ export default function BorderlessMaritimeFinance() {
                 type="text"
                 value={recipient}
                 onChange={(e) => setRecipient(e.target.value)}
-                placeholder={`Enter ${transactionType === "exchange" ? "Borderless account" : transactionType === "pay" ? "supplier's account" : "your bank account"}`}
+                placeholder={`Enter ${
+                  transactionType === "exchange"
+                    ? "Borderless account"
+                    : transactionType === "pay"
+                    ? "supplier's account"
+                    : "your bank account"
+                }`}
                 required
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
@@ -143,19 +215,33 @@ export default function BorderlessMaritimeFinance() {
         </div>
 
         <div className="mt-8 rounded-lg bg-white p-6 shadow-md">
-          <h2 className="mb-4 text-xl font-semibold text-gray-800">Transaction History</h2>
+          <h2 className="mb-4 text-xl font-semibold text-gray-800">
+            Transaction History
+          </h2>
           <ul className="space-y-4">
             {transactions.map((tx) => (
-              <li key={tx.id} className="flex items-center justify-between border-b pb-2">
+              <li
+                key={tx.id}
+                className="flex items-center justify-between border-b pb-2"
+              >
                 <div>
                   <p className="font-medium">{tx.type}</p>
                   <p className="text-sm text-gray-500">{tx.date}</p>
                 </div>
                 <div>
-                  <span className={`font-bold ${tx.type.includes('Received') || tx.type.includes('Exchanged') ? 'text-green-500' : 'text-red-500'}`}>
+                  <span
+                    className={`font-bold ${
+                      tx.type.includes("Received") ||
+                      tx.type.includes("Exchanged")
+                        ? "text-green-500"
+                        : "text-red-500"
+                    }`}
+                  >
                     ${tx.amount}
                   </span>
-                  <span className="ml-2 text-sm text-gray-500">{tx.status}</span>
+                  <span className="ml-2 text-sm text-gray-500">
+                    {tx.status}
+                  </span>
                 </div>
               </li>
             ))}
@@ -163,5 +249,5 @@ export default function BorderlessMaritimeFinance() {
         </div>
       </main>
     </div>
-  )
+  );
 }
