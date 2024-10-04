@@ -1,21 +1,17 @@
+// script/Borderless.s.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "forge-std/Script.sol";
-import "../src/Borderless.sol";
+import "../src/Borderless.sol";  // Adjust the path as necessary
 
-contract BorderlessDeployment is Script {
+contract DeployBorderless is Script {
     function run() external {
-        // Start broadcasting transactions
-        vm.startBroadcast();
+        address owner = msg.sender;  // The address deploying the contract
+        address trustedForwarder = owner;  // Replace with actual trusted forwarder address
 
-        // Deploy the Borderless Stablecoin contract with the owner address
-        BorderlessStablecoin stablecoin = new BorderlessStablecoin(msg.sender);
-
-        // Optionally, mint tokens to the owner's address
-        stablecoin.mint(msg.sender, 1000000 * 10 ** stablecoin.decimals());
-
-        // End broadcasting
-        vm.stopBroadcast();
+        vm.startBroadcast();  // Starts broadcasting the transaction
+        BorderlessStablecoin stablecoin = new BorderlessStablecoin(owner, trustedForwarder);
+        vm.stopBroadcast();  // Stops broadcasting the transaction
     }
 }

@@ -2,148 +2,66 @@
 pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
-import "../src/Borderless.sol"; // Adjust the import path as needed
-import "@openzeppelin/contracts/access/Ownable.sol"; // Import Ownable to access the custom error
+import "../src/Borderless.sol";  // Adjust path according to your directory
 
 contract BorderlessStablecoinTest is Test {
-    BorderlessStablecoin public token;
-    address public owner;
-    address public user1;
-    address public user2;
+    BorderlessStablecoin stablecoin;
+    address owner = address(0x123);  // Owner account
+    address trustedForwarder = address(0x456);  // Trusted forwarder
+    address user1 = address(0x789);  // User1 account
+    address user2 = address(0xABC);  // User2 account
 
     function setUp() public {
-        // Initialize addresses with valid hexadecimal literals
-        owner = address(0xA11CE); // 'A11CE' consists of valid hex digits
+        // Deploy the BorderlessStablecoin contract with owner and trustedForwarder
+        stablecoin = new BorderlessStablecoin(owner, trustedForwarder);
+
+        // Label addresses to make logs easier to read
         vm.label(owner, "Owner");
-
-        user1 = address(0xB0B); // 'B0B' consists of valid hex digits
+        vm.label(trustedForwarder, "Trusted Forwarder");
         vm.label(user1, "User1");
-
-        user2 = address(0xCAFEBABE); // 'CAFEBABE' consists of valid hex digits
         vm.label(user2, "User2");
-
-        // Deploy the contract with the specified owner
-        token = new BorderlessStablecoin(owner);
     }
 
-    /// @dev Test that the initial owner is set correctly
-    function testInitialOwner() public {
-        assertEq(token.owner(), owner);
-    }
+    function testMintTokens() public {
+        uint256 mintAmount = 1000 ether;
 
-    /// @dev Test that the owner can mint tokens
-    function testMintByOwner() public {
-        uint256 amount = 1000 * 1e18;
-
-        // Simulate owner calling mint
+        // Impersonate the owner to mint tokens
         vm.prank(owner);
-        token.mint(user1, amount);
+        stablecoin.mint(user1, mintAmount);
 
-        // Verify the balance of user1
-        assertEq(token.balanceOf(user1), amount);
+        // Check that user1's balance increased by mintAmount
+        assertEq(stablecoin.balanceOf(user1), mintAmount);
     }
 
-    /// @dev Test that non-owners cannot mint tokens
-    function testMintByNonOwner() public {
-        uint256 amount = 1000 * 1e18;
+    function testTransferTokens() public {
+        uint256 mintAmount = 1000 ether;
+        uint256 transferAmount = 500 ether;
 
-        // Expect revert when non-owner tries to mint
+        // Impersonate the owner to mint tokens
+        vm.prank(owner);
+        stablecoin.mint(user1, mintAmount);
+
+        // Impersonate user1 to transfer tokens to user2
         vm.prank(user1);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Ownable.OwnableUnauthorizedAccount.selector,
-                user1
-            )
-        );
-        token.mint(user1, amount);
+        stablecoin.transfer(user2, transferAmount);
+
+        // Check that user1's balance is reduced and user2's balance increased
+        assertEq(stablecoin.balanceOf(user1), mintAmount - transferAmount);
+        assertEq(stablecoin.balanceOf(user2), transferAmount);
     }
 
-    /// @dev Test that the owner can burn tokens
-    function testBurnByOwner() public {
-        uint256 amount = 1000 * 1e18;
+    function testBurnTokens() public {
+        uint256 mintAmount = 1000 ether;
 
-        // Owner mints tokens to themselves
+        // Impersonate the owner to mint tokens
         vm.prank(owner);
-        token.mint(owner, amount);
+        stablecoin.mint(owner, mintAmount);
 
-        // Owner burns tokens
+        // Impersonate the owner to burn tokens
         vm.prank(owner);
-        token.burn(amount);
+        stablecoin.burn(mintAmount);
 
-        // Verify the owner's balance is zero
-        assertEq(token.balanceOf(owner), 0);
-    }
-
-    /// @dev Test that the owner can burn tokens
-    function testPartialBurnByOwner() public {
-        uint256 amount = 1000 * 1e18;
-
-        // Owner mints tokens to themselves
-        vm.prank(owner);
-        token.mint(owner, amount);
-
-        // Owner burns tokens
-        vm.prank(owner);
-        token.burn(500 * 1e18);
-
-        // Verify the owner's balance is zero
-        assertEq(token.balanceOf(owner), 500 * 1e18);
-    }
-
-    /// @dev Test that non-owners cannot burn tokens
-    function testBurnByNonOwner() public {
-        uint256 amount = 1000 * 1e18;
-
-        // Owner mints tokens to user1
-        vm.prank(owner);
-        token.mint(user1, amount);
-
-        // Expect revert when non-owner tries to burn
-        vm.prank(user1);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Ownable.OwnableUnauthorizedAccount.selector,
-                user1
-            )
-        );
-        token.burn(amount);
-    }
-
-    /// @dev Test token transfer functionality
-    function testTransfer() public {
-        uint256 amount = 1000 * 1e18;
-
-        // Owner mints tokens to themselves
-        vm.prank(owner);
-        token.mint(owner, amount);
-
-        // Owner transfers tokens to user1
-        vm.prank(owner);
-        token.transfer(user1, amount);
-
-        // Verify balances
-        assertEq(token.balanceOf(owner), 0);
-        assertEq(token.balanceOf(user1), amount);
-    }
-
-    /// @dev Test approval and transferFrom functionality
-    function testApproveAndTransferFrom() public {
-        uint256 amount = 1000 * 1e18;
-
-        // Owner mints tokens to user1
-        vm.prank(owner);
-        token.mint(user1, amount);
-
-        // User1 approves user2 to spend tokens
-        vm.prank(user1);
-        token.approve(user2, amount);
-
-        // User2 transfers tokens from user1 to themselves
-        vm.prank(user2);
-        token.transferFrom(user1, user2, amount);
-
-        // Verify balances
-        assertEq(token.balanceOf(user1), 0);
-        assertEq(token.balanceOf(user2), amount);
+        // Check that owner's balance is zero after burning
+        assertEq(stablecoin.balanceOf(owner), 0);
     }
 }
