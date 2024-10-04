@@ -1,0 +1,26 @@
+[
+  {
+    "id": "agent1",
+    "name": "Maritime Agents Ltd.",
+    "type": "agent",
+    "wallet": "0x1234567890123456789012345678901234567890"
+  },
+  {
+    "id": "supplier1",
+    "name": "Ship Supplies Co.",
+    "type": "supplier",
+    "wallet": "0x2345678901234567890123456789012345678901"
+  },
+  {
+    "id": "charter1",
+    "name": "Global Charter Inc.",
+    "type": "charter",
+    "wallet": "0x3456789012345678901234567890123456789012"
+  },
+  {
+    "id": "supplier2",
+    "name": "Ship Things Co.",
+    "type": "supplier",
+    "wallet": "0x2345678901234567890123456789012345678901"
+  }
+]
