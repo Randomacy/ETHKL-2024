@@ -472,6 +472,27 @@ const web3 = new Web3("https://pacific-rpc.sepolia-testnet.manta.network/http");
 
 const contract = new web3.eth.Contract(contractABI, contractAddress);
 
+// Safely get the private key from environment variables
+const getPrivateKey = (): string => {
+  const privateKey = process.env.RELAYER_PRIVATE_KEY;
+  if (!privateKey) {
+    throw new Error("RELAYER_PRIVATE_KEY is not set in environment variables");
+  }
+  // Append '0x' prefix if not present
+  return privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`;
+};
+
+// Create account from private key
+let account;
+try {
+  const privateKey = getPrivateKey();
+  account = web3.eth.accounts.privateKeyToAccount(privateKey);
+  web3.eth.accounts.wallet.add(account);
+} catch (error) {
+  console.error("Error initializing account:", error);
+  throw error;
+}
+
 export async function transferTokens(
   fromAddress: string,
   toAddress: string,
@@ -482,10 +503,10 @@ export async function transferTokens(
     const gasPrice = await web3.eth.getGasPrice();
     const gas = await contract.methods
       .transfer(toAddress, amountInWei)
-      .estimateGas({ from: fromAddress });
+      .estimateGas({ from: account.address });
 
     const tx = await contract.methods.transfer(toAddress, amountInWei).send({
-      from: fromAddress,
+      from: account.address,
       gas,
       gasPrice,
     });
@@ -503,10 +524,10 @@ export async function mintTokens(toAddress: string, amount: string) {
     const gasPrice = await web3.eth.getGasPrice();
     const gas = await contract.methods
       .mint(toAddress, amountInWei)
-      .estimateGas();
+      .estimateGas({ from: account.address });
 
     const tx = await contract.methods.mint(toAddress, amountInWei).send({
-      from: await web3.eth.getAccounts().then((accounts) => accounts[0]), // Assuming the first account is the contract owner
+      from: account.address,
       gas,
       gasPrice,
     });
@@ -523,11 +544,11 @@ export async function burnTokens(fromAddress: string, amount: string) {
     const amountInWei = web3.utils.toWei(amount, "ether");
     const gasPrice = await web3.eth.getGasPrice();
     const gas = await contract.methods
-      .burn(fromAddress, amountInWei)
-      .estimateGas({ from: fromAddress });
+      .burn(amountInWei)
+      .estimateGas({ from: account.address });
 
-    const tx = await contract.methods.burn(fromAddress, amountInWei).send({
-      from: fromAddress,
+    const tx = await contract.methods.burn(amountInWei).send({
+      from: account.address,
       gas,
       gasPrice,
     });
@@ -543,10 +564,57 @@ export async function getTokenBalance(address: string): Promise<string> {
   try {
     const balance = await contract.methods.balanceOf(address).call();
     const balanceInEther = web3.utils.fromWei(balance, "ether");
-    // Convert to number and format to two decimal places
     return parseFloat(balanceInEther).toFixed(2);
   } catch (error) {
     console.error("Error getting token balance:", error);
+    throw error;
+  }
+}
+
+export async function approveTokens(spender: string, amount: string) {
+  try {
+    const amountInWei = web3.utils.toWei(amount, "ether");
+    const gasPrice = await web3.eth.getGasPrice();
+    const gas = await contract.methods
+      .approve(spender, amountInWei)
+      .estimateGas({ from: account.address });
+
+    const tx = await contract.methods.approve(spender, amountInWei).send({
+      from: account.address,
+      gas,
+      gasPrice,
+    });
+
+    return tx.transactionHash;
+  } catch (error) {
+    console.error("Error approving tokens:", error);
+    throw error;
+  }
+}
+
+export async function transferFromTokens(
+  fromAddress: string,
+  toAddress: string,
+  amount: string
+) {
+  try {
+    const amountInWei = web3.utils.toWei(amount, "ether");
+    const gasPrice = await web3.eth.getGasPrice();
+    const gas = await contract.methods
+      .transferFrom(fromAddress, toAddress, amountInWei)
+      .estimateGas({ from: account.address });
+
+    const tx = await contract.methods
+      .transferFrom(fromAddress, toAddress, amountInWei)
+      .send({
+        from: account.address,
+        gas,
+        gasPrice,
+      });
+
+    return tx.transactionHash;
+  } catch (error) {
+    console.error("Error transferring tokens from address:", error);
     throw error;
   }
 }
