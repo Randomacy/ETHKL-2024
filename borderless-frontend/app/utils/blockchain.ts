@@ -1,5 +1,6 @@
 import Web3 from "web3";
 import { AbiItem } from "web3-utils";
+import BigNumber from "bignumber.js";
 
 // Replace with your actual contract ABI and address
 const contractABI: AbiItem[] = [
@@ -464,6 +465,24 @@ const contractABI: AbiItem[] = [
       },
     ],
   },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "to",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "amount",
+        type: "uint256",
+      },
+    ],
+    name: "mintWithRelayer",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
 ];
 const contractAddress = "0xBfB046099a45A6c556aa3B025a4692a17a123632";
 
@@ -520,18 +539,28 @@ export async function transferTokens(
 
 export async function mintTokens(toAddress: string, amount: string) {
   try {
-    const amountInWei = web3.utils.toWei(amount, "ether");
-    const gasPrice = await web3.eth.getGasPrice();
+    const decimals = await contract.methods.decimals().call();
+    const amountInSmallestUnit = new BigNumber(amount)
+      .times(new BigNumber(10).pow(decimals))
+      .toString(); // Converts to smallest unit
+
+    const gasPrice = await web3.eth.getGasPrice(); // Fetch gas price
     const gas = await contract.methods
-      .mint(toAddress, amountInWei)
-      .estimateGas({ from: account.address });
+      .mintWithRelayer(toAddress, amountInSmallestUnit)
+      .estimateGas({ from: account.address }); // Estimate gas for minting
 
-    const tx = await contract.methods.mint(toAddress, amountInWei).send({
-      from: account.address,
-      gas,
-      gasPrice,
-    });
+    console.log(`Gas limit: ${gas}`);
+    console.log(`Gas price: ${gasPrice}`);
 
+    const tx = await contract.methods
+      .mintWithRelayer(toAddress, amountInSmallestUnit)
+      .send({
+        from: account.address,
+        gas,
+        gasPrice,
+      });
+
+    console.log(`Transaction hash: ${tx.transactionHash}`);
     return tx.transactionHash;
   } catch (error) {
     console.error("Error minting tokens:", error);
