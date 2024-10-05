@@ -35,6 +35,7 @@ export default function BorderlessMaritimeFinance() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false); // Add a loading state
 
   // Get agent's wallet address from companiesData
   const agentCompany = companies.find((company) => company.type === "agent");
@@ -66,7 +67,7 @@ export default function BorderlessMaritimeFinance() {
       const response = await fetch("/api/history", {
         method: "GET",
         headers: {
-          "Cache-Control": "no-store, no-cache, must-revalidate",
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
         },
       });
       const data = await response.json();
@@ -94,9 +95,11 @@ export default function BorderlessMaritimeFinance() {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setLoading(true); // Set loading to true when transaction starts
 
     if (parseFloat(amount) <= 0) {
       setError("Amount must be greater than zero");
+      setLoading(false); // Reset loading state
       return;
     }
 
@@ -106,6 +109,7 @@ export default function BorderlessMaritimeFinance() {
         const supplier = companies.find((company) => company.id === recipient);
         if (!supplier) {
           setError("Supplier not found.");
+          setLoading(false); // Reset loading state
           return;
         }
 
@@ -137,6 +141,8 @@ export default function BorderlessMaritimeFinance() {
     } catch (err) {
       console.error("Transaction failed:", err);
       setError(err.message || "Transaction failed. Please try again.");
+    } finally {
+      setLoading(false); // Reset loading state when transaction is done
     }
   };
 
@@ -272,11 +278,38 @@ export default function BorderlessMaritimeFinance() {
             </div>
             <button
               type="submit"
-              className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              disabled={loading} // Disable button when loading
             >
-              {transactionType === "exchange" && "Exchange Funds"}
-              {transactionType === "pay" && "Pay Supplier"}
-              {transactionType === "redeem" && "Redeem Fiat"}
+              {loading ? ( // Show spinner if loading
+                <svg
+                  className="animate-spin h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v8H4z"
+                  ></path>
+                </svg>
+              ) : (
+                // Normal button text when not loading
+                <>
+                  {transactionType === "exchange" && "Exchange Funds"}
+                  {transactionType === "pay" && "Pay Supplier"}
+                  {transactionType === "redeem" && "Redeem Fiat"}
+                </>
+              )}
             </button>
           </form>
         </div>
