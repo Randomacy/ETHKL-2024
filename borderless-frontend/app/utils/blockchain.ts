@@ -651,7 +651,7 @@ const getPrivateKey = (): string => {
 };
 
 // Create account from private key
-let account;
+let account: ReturnType<typeof web3.eth.accounts.privateKeyToAccount>; // Correct typing
 try {
   const privateKey = getPrivateKey();
   account = web3.eth.accounts.privateKeyToAccount(privateKey);
@@ -675,8 +675,8 @@ export async function transferTokens(
 
     const tx = await contract.methods.transfer(toAddress, amountInWei).send({
       from: account.address,
-      gas,
-      gasPrice,
+      gas: gas.toString(),
+      gasPrice: gasPrice.toString(),
     });
 
     return tx.transactionHash;
@@ -702,8 +702,8 @@ export async function mintTokens(toAddress: string, amount: string) {
       .operatorMint(toAddress, amountInSmallestUnit)
       .send({
         from: account.address,
-        gas,
-        gasPrice,
+        gas: gas.toString(),
+        gasPrice: gasPrice.toString(),
       });
 
     console.log(`Transaction hash: ${tx.transactionHash}`);
@@ -730,8 +730,8 @@ export async function burnTokens(fromAddress: string, amount: string) {
       .operatorBurn(fromAddress, amountInSmallestUnit)
       .send({
         from: account.address,
-        gas,
-        gasPrice,
+        gas: gas.toString(),
+        gasPrice: gasPrice.toString(),
       });
 
     console.log(`Transaction hash: ${tx.transactionHash}`);
@@ -763,8 +763,8 @@ export async function approveTokens(spender: string, amount: string) {
 
     const tx = await contract.methods.approve(spender, amountInWei).send({
       from: account.address,
-      gas,
-      gasPrice,
+      gas: gas.toString(),
+      gasPrice: gasPrice.toString(),
     });
 
     return tx.transactionHash;
@@ -790,8 +790,8 @@ export async function transferFromTokens(
       .transferFrom(fromAddress, toAddress, amountInWei)
       .send({
         from: account.address,
-        gas,
-        gasPrice,
+        gas: gas.toString(),
+        gasPrice: gasPrice.toString(),
       });
 
     return tx.transactionHash;
@@ -822,8 +822,8 @@ export async function operatorTransferTokens(
       .operatorTransfer(fromAddress, toAddress, amountInSmallestUnit)
       .send({
         from: account.address,
-        gas,
-        gasPrice,
+        gas: gas.toString(),
+        gasPrice: gasPrice.toString(),
       });
 
     console.log(`Transaction hash: ${tx.transactionHash}`);
