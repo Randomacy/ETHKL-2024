@@ -63,6 +63,12 @@ export async function POST(req: Request) {
 
     switch (action) {
       case "transfer":
+        if (!fromCompany?.wallet || !toCompany?.wallet) {
+          return NextResponse.json(
+            { error: "Wallet not found for one or both companies" },
+            { status: 400 }
+          );
+        }
         txHash = await transferTokens(
           fromCompany.wallet,
           toCompany.wallet,
@@ -70,9 +76,21 @@ export async function POST(req: Request) {
         );
         break;
       case "mint":
+        if (!toCompany?.wallet) {
+          return NextResponse.json(
+            { error: "Wallet not found for minting" },
+            { status: 400 }
+          );
+        }
         txHash = await mintTokens(toCompany.wallet, amount);
         break;
       case "burn":
+        if (!fromCompany?.wallet) {
+          return NextResponse.json(
+            { error: "Wallet not found for burning" },
+            { status: 400 }
+          );
+        }
         txHash = await burnTokens(fromCompany.wallet, amount);
         break;
       default:
@@ -82,8 +100,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, transactionHash: txHash });
   } catch (error) {
     console.error("Error processing transaction:", error);
+
+    // Type narrowing for `error`
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: error.message || "Transaction failed" },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { error: error.message || "Transaction failed" },
+      { error: "An unknown error occurred" },
       { status: 500 }
     );
   }
