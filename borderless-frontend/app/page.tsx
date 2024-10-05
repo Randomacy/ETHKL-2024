@@ -19,8 +19,8 @@ interface Company {
 
 interface Transaction {
   id: string;
-  date: string; // assuming it's a Unix timestamp in seconds
-  value: string; // if tokenAmount is passed as 'value' in your API
+  date: string;
+  tokenAmount: string;
   from: string;
   to: string;
   status: string;
@@ -35,7 +35,7 @@ export default function BorderlessMaritimeFinance() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false); // Add a loading state
+  const [loading, setLoading] = useState(false);
 
   // Get agent's wallet address from companiesData
   const agentCompany = companies.find((company) => company.type === "agent");
@@ -140,7 +140,11 @@ export default function BorderlessMaritimeFinance() {
       }
     } catch (err) {
       console.error("Transaction failed:", err);
-      setError(err.message || "Transaction failed. Please try again.");
+      if (err instanceof Error) {
+        setError(err.message || "Transaction failed. Please try again.");
+      } else {
+        setError("Transaction failed. Please try again.");
+      }
     } finally {
       setLoading(false); // Reset loading state when transaction is done
     }
