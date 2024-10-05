@@ -8,17 +8,38 @@ const contractABI: AbiItem[] = [
     type: "constructor",
     inputs: [
       {
-        name: "initialOwner",
-        type: "address",
-        internalType: "address",
-      },
-      {
-        name: "trustedForwarder",
-        type: "address",
-        internalType: "address",
+        name: "initialSupply",
+        type: "uint256",
+        internalType: "uint256",
       },
     ],
     stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "DEFAULT_ADMIN_ROLE",
+    inputs: [],
+    outputs: [
+      {
+        name: "",
+        type: "bytes32",
+        internalType: "bytes32",
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "OPERATOR_ROLE",
+    inputs: [],
+    outputs: [
+      {
+        name: "",
+        type: "bytes32",
+        internalType: "bytes32",
+      },
+    ],
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -115,10 +136,52 @@ const contractABI: AbiItem[] = [
   },
   {
     type: "function",
-    name: "isTrustedForwarder",
+    name: "getRoleAdmin",
     inputs: [
       {
-        name: "forwarder",
+        name: "role",
+        type: "bytes32",
+        internalType: "bytes32",
+      },
+    ],
+    outputs: [
+      {
+        name: "",
+        type: "bytes32",
+        internalType: "bytes32",
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "grantRole",
+    inputs: [
+      {
+        name: "role",
+        type: "bytes32",
+        internalType: "bytes32",
+      },
+      {
+        name: "account",
+        type: "address",
+        internalType: "address",
+      },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "hasRole",
+    inputs: [
+      {
+        name: "role",
+        type: "bytes32",
+        internalType: "bytes32",
+      },
+      {
+        name: "account",
         type: "address",
         internalType: "address",
       },
@@ -134,7 +197,38 @@ const contractABI: AbiItem[] = [
   },
   {
     type: "function",
-    name: "mint",
+    name: "name",
+    inputs: [],
+    outputs: [
+      {
+        name: "",
+        type: "string",
+        internalType: "string",
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "operatorBurn",
+    inputs: [
+      {
+        name: "from",
+        type: "address",
+        internalType: "address",
+      },
+      {
+        name: "amount",
+        type: "uint256",
+        internalType: "uint256",
+      },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "operatorMint",
     inputs: [
       {
         name: "to",
@@ -152,36 +246,81 @@ const contractABI: AbiItem[] = [
   },
   {
     type: "function",
-    name: "name",
-    inputs: [],
-    outputs: [
+    name: "operatorTransfer",
+    inputs: [
       {
-        name: "",
-        type: "string",
-        internalType: "string",
+        name: "from",
+        type: "address",
+        internalType: "address",
+      },
+      {
+        name: "to",
+        type: "address",
+        internalType: "address",
+      },
+      {
+        name: "amount",
+        type: "uint256",
+        internalType: "uint256",
       },
     ],
-    stateMutability: "view",
+    outputs: [],
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
-    name: "owner",
-    inputs: [],
-    outputs: [
+    name: "renounceRole",
+    inputs: [
       {
-        name: "",
+        name: "role",
+        type: "bytes32",
+        internalType: "bytes32",
+      },
+      {
+        name: "callerConfirmation",
         type: "address",
         internalType: "address",
       },
     ],
-    stateMutability: "view",
+    outputs: [],
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
-    name: "renounceOwnership",
-    inputs: [],
+    name: "revokeRole",
+    inputs: [
+      {
+        name: "role",
+        type: "bytes32",
+        internalType: "bytes32",
+      },
+      {
+        name: "account",
+        type: "address",
+        internalType: "address",
+      },
+    ],
     outputs: [],
     stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "supportsInterface",
+    inputs: [
+      {
+        name: "interfaceId",
+        type: "bytes4",
+        internalType: "bytes4",
+      },
+    ],
+    outputs: [
+      {
+        name: "",
+        type: "bool",
+        internalType: "bool",
+      },
+    ],
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -263,32 +402,6 @@ const contractABI: AbiItem[] = [
     stateMutability: "nonpayable",
   },
   {
-    type: "function",
-    name: "transferOwnership",
-    inputs: [
-      {
-        name: "newOwner",
-        type: "address",
-        internalType: "address",
-      },
-    ],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  {
-    type: "function",
-    name: "trustedForwarder",
-    inputs: [],
-    outputs: [
-      {
-        name: "",
-        type: "address",
-        internalType: "address",
-      },
-    ],
-    stateMutability: "view",
-  },
-  {
     type: "event",
     name: "Approval",
     inputs: [
@@ -315,16 +428,72 @@ const contractABI: AbiItem[] = [
   },
   {
     type: "event",
-    name: "OwnershipTransferred",
+    name: "RoleAdminChanged",
     inputs: [
       {
-        name: "previousOwner",
+        name: "role",
+        type: "bytes32",
+        indexed: true,
+        internalType: "bytes32",
+      },
+      {
+        name: "previousAdminRole",
+        type: "bytes32",
+        indexed: true,
+        internalType: "bytes32",
+      },
+      {
+        name: "newAdminRole",
+        type: "bytes32",
+        indexed: true,
+        internalType: "bytes32",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "RoleGranted",
+    inputs: [
+      {
+        name: "role",
+        type: "bytes32",
+        indexed: true,
+        internalType: "bytes32",
+      },
+      {
+        name: "account",
         type: "address",
         indexed: true,
         internalType: "address",
       },
       {
-        name: "newOwner",
+        name: "sender",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "RoleRevoked",
+    inputs: [
+      {
+        name: "role",
+        type: "bytes32",
+        indexed: true,
+        internalType: "bytes32",
+      },
+      {
+        name: "account",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "sender",
         type: "address",
         indexed: true,
         internalType: "address",
@@ -356,6 +525,27 @@ const contractABI: AbiItem[] = [
       },
     ],
     anonymous: false,
+  },
+  {
+    type: "error",
+    name: "AccessControlBadConfirmation",
+    inputs: [],
+  },
+  {
+    type: "error",
+    name: "AccessControlUnauthorizedAccount",
+    inputs: [
+      {
+        name: "account",
+        type: "address",
+        internalType: "address",
+      },
+      {
+        name: "neededRole",
+        type: "bytes32",
+        internalType: "bytes32",
+      },
+    ],
   },
   {
     type: "error",
@@ -443,48 +633,8 @@ const contractABI: AbiItem[] = [
       },
     ],
   },
-  {
-    type: "error",
-    name: "OwnableInvalidOwner",
-    inputs: [
-      {
-        name: "owner",
-        type: "address",
-        internalType: "address",
-      },
-    ],
-  },
-  {
-    type: "error",
-    name: "OwnableUnauthorizedAccount",
-    inputs: [
-      {
-        name: "account",
-        type: "address",
-        internalType: "address",
-      },
-    ],
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "to",
-        type: "address",
-      },
-      {
-        internalType: "uint256",
-        name: "amount",
-        type: "uint256",
-      },
-    ],
-    name: "mintWithRelayer",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
 ];
-const contractAddress = "0xBfB046099a45A6c556aa3B025a4692a17a123632";
+const contractAddress = "0x5543005f3aA8716EE90b627aa9Ae52AB4127Ab93";
 
 // Initialize Web3 with your Ethereum node URL
 const web3 = new Web3("https://pacific-rpc.sepolia-testnet.manta.network/http");
@@ -493,11 +643,10 @@ const contract = new web3.eth.Contract(contractABI, contractAddress);
 
 // Safely get the private key from environment variables
 const getPrivateKey = (): string => {
-  const privateKey = process.env.RELAYER_PRIVATE_KEY;
+  const privateKey = process.env.PRIVATE_KEY;
   if (!privateKey) {
-    throw new Error("RELAYER_PRIVATE_KEY is not set in environment variables");
+    throw new Error("PRIVATE_KEY is not set in environment variables");
   }
-  // Append '0x' prefix if not present
   return privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`;
 };
 
@@ -541,19 +690,16 @@ export async function mintTokens(toAddress: string, amount: string) {
   try {
     const decimals = await contract.methods.decimals().call();
     const amountInSmallestUnit = new BigNumber(amount)
-      .times(new BigNumber(10).pow(decimals))
-      .toString(); // Converts to smallest unit
+      .multipliedBy(new BigNumber(10).pow(decimals))
+      .toFixed(0);
 
-    const gasPrice = await web3.eth.getGasPrice(); // Fetch gas price
+    const gasPrice = await web3.eth.getGasPrice();
     const gas = await contract.methods
-      .mintWithRelayer(toAddress, amountInSmallestUnit)
-      .estimateGas({ from: account.address }); // Estimate gas for minting
-
-    console.log(`Gas limit: ${gas}`);
-    console.log(`Gas price: ${gasPrice}`);
+      .operatorMint(toAddress, amountInSmallestUnit)
+      .estimateGas({ from: account.address });
 
     const tx = await contract.methods
-      .mintWithRelayer(toAddress, amountInSmallestUnit)
+      .operatorMint(toAddress, amountInSmallestUnit)
       .send({
         from: account.address,
         gas,
@@ -570,18 +716,25 @@ export async function mintTokens(toAddress: string, amount: string) {
 
 export async function burnTokens(fromAddress: string, amount: string) {
   try {
-    const amountInWei = web3.utils.toWei(amount, "ether");
+    const decimals = await contract.methods.decimals().call();
+    const amountInSmallestUnit = new BigNumber(amount)
+      .multipliedBy(new BigNumber(10).pow(decimals))
+      .toFixed(0); // Converts to smallest unit and ensures no exponential notation
+
     const gasPrice = await web3.eth.getGasPrice();
     const gas = await contract.methods
-      .burn(amountInWei)
+      .operatorBurn(fromAddress, amountInSmallestUnit)
       .estimateGas({ from: account.address });
 
-    const tx = await contract.methods.burn(amountInWei).send({
-      from: account.address,
-      gas,
-      gasPrice,
-    });
+    const tx = await contract.methods
+      .operatorBurn(fromAddress, amountInSmallestUnit)
+      .send({
+        from: account.address,
+        gas,
+        gasPrice,
+      });
 
+    console.log(`Transaction hash: ${tx.transactionHash}`);
     return tx.transactionHash;
   } catch (error) {
     console.error("Error burning tokens:", error);
@@ -644,6 +797,39 @@ export async function transferFromTokens(
     return tx.transactionHash;
   } catch (error) {
     console.error("Error transferring tokens from address:", error);
+    throw error;
+  }
+}
+
+export async function operatorTransferTokens(
+  fromAddress: string,
+  toAddress: string,
+  amount: string
+) {
+  try {
+    const decimals = await contract.methods.decimals().call();
+    const amountInSmallestUnit = new BigNumber(amount)
+      .multipliedBy(new BigNumber(10).pow(decimals))
+      .toFixed(0);
+
+    const gasPrice = await web3.eth.getGasPrice();
+
+    const gas = await contract.methods
+      .operatorTransfer(fromAddress, toAddress, amountInSmallestUnit)
+      .estimateGas({ from: account.address });
+
+    const tx = await contract.methods
+      .operatorTransfer(fromAddress, toAddress, amountInSmallestUnit)
+      .send({
+        from: account.address,
+        gas,
+        gasPrice,
+      });
+
+    console.log(`Transaction hash: ${tx.transactionHash}`);
+    return tx.transactionHash;
+  } catch (error) {
+    console.error("Error transferring tokens:", error);
     throw error;
   }
 }
