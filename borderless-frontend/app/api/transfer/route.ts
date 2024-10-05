@@ -1,23 +1,41 @@
-// pages/api/transfer.ts
-import { NextApiRequest, NextApiResponse } from 'next';
-import { operatorTransferTokens } from '../../utils/blockchain';
+// app/api/transfer/route.ts
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
+import { NextResponse } from "next/server";
+import { operatorTransferTokens } from "../../utils/blockchain";
+import companies from "../../data/companies.json";
+
+export async function POST(request: Request) {
+  const body = await request.json();
+  const { toAddress, amount } = body;
+
+  if (!toAddress || !amount) {
+    return NextResponse.json(
+      { message: "Missing parameters" },
+      { status: 400 }
+    );
   }
 
-  const { fromAddress, toAddress, amount } = req.body;
-
-  if (!fromAddress || !toAddress || !amount) {
-    return res.status(400).json({ message: 'Missing parameters' });
+  // Get agent's wallet address from companies.json
+  const agentCompany = companies.find((company) => company.type === "agent");
+  if (!agentCompany) {
+    return NextResponse.json(
+      { message: "Agent company not found" },
+      { status: 500 }
+    );
   }
+  const fromAddress = agentCompany.wallet;
 
   try {
     const txHash = await operatorTransferTokens(fromAddress, toAddress, amount);
-    return res.status(200).json({ message: 'Tokens transferred successfully', txHash });
+    return NextResponse.json(
+      { message: "Tokens transferred successfully", txHash },
+      { status: 200 }
+    );
   } catch (error: any) {
-    console.error('Error transferring tokens:', error);
-    return res.status(500).json({ message: 'Error transferring tokens', error: error.message });
+    console.error("Error transferring tokens:", error);
+    return NextResponse.json(
+      { message: "Error transferring tokens", error: error.message },
+      { status: 500 }
+    );
   }
 }
