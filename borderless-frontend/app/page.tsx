@@ -18,7 +18,7 @@ interface Company {
 }
 
 interface Transaction {
-  id: string;
+  blockNumber: string;
   date: string;
   tokenAmount: string;
   from: string;
@@ -326,7 +326,7 @@ export default function BorderlessMaritimeFinance() {
             {transactions.length > 0 ? (
               transactions.slice(0, 10).map((tx) => (
                 <li
-                  key={tx.id}
+                  key={tx.blockNumber}
                   className="flex items-center justify-between border-b pb-2"
                 >
                   <div>
