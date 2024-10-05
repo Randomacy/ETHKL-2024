@@ -8,6 +8,7 @@ import {
   FaEdit,
   FaTrash,
   FaCoins,
+  FaFire,
 } from "react-icons/fa";
 
 interface Company {
@@ -22,11 +23,13 @@ export default function AdminDashboard() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isMintDialogOpen, setIsMintDialogOpen] = useState(false);
+  const [isBurnDialogOpen, setIsBurnDialogOpen] = useState(false);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
   const [newCompany, setNewCompany] = useState<Partial<Company>>({
     type: "agent",
   });
   const [mintAmount, setMintAmount] = useState("");
+  const [burnAmount, setBurnAmount] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -110,16 +113,45 @@ export default function AdminDashboard() {
             amount: mintAmount,
           }),
         });
-        if (!response.ok) throw new Error("Failed to mint tokens");
+
         const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to mint tokens");
+        }
+
         setIsMintDialogOpen(false);
         setMintAmount("");
         setSuccess(
           `Successfully minted ${mintAmount} tokens to ${currentCompany.name}. Transaction hash: ${data.txHash}`
         );
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error minting tokens:", error);
-        setError("Failed to mint tokens");
+        setError(error.message || "Failed to mint tokens");
+      }
+    }
+  };
+
+  const handleBurnTokens = async () => {
+    if (currentCompany && burnAmount) {
+      try {
+        const response = await fetch("/api/burn", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            address: currentCompany.wallet,
+            amount: burnAmount,
+          }),
+        });
+        if (!response.ok) throw new Error("Failed to burn tokens");
+        const data = await response.json();
+        setIsBurnDialogOpen(false);
+        setBurnAmount("");
+        setSuccess(
+          `Successfully burned ${burnAmount} tokens from ${currentCompany.name}. Transaction hash: ${data.txHash}`
+        );
+      } catch (error) {
+        console.error("Error burning tokens:", error);
+        setError("Failed to burn tokens");
       }
     }
   };
@@ -222,9 +254,18 @@ export default function AdminDashboard() {
                         setCurrentCompany(company);
                         setIsMintDialogOpen(true);
                       }}
-                      className="text-green-600 hover:text-green-900"
+                      className="text-green-600 hover:text-green-900 mr-3"
                     >
                       <FaCoins />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCurrentCompany(company);
+                        setIsBurnDialogOpen(true);
+                      }}
+                      className="text-orange-600 hover:text-orange-900"
+                    >
+                      <FaFire />
                     </button>
                   </td>
                 </tr>
@@ -408,6 +449,51 @@ export default function AdminDashboard() {
                   id="cancel-btn"
                   className="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
                   onClick={() => setIsMintDialogOpen(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isBurnDialogOpen && currentCompany && (
+        <div
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full"
+          id="my-modal"
+        >
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3 text-center">
+              <h3 className="text-lg leading-6 font-medium text-gray-900">
+                Burn Tokens
+              </h3>
+              <div className="mt-2 px-7 py-3">
+                <p className="text-sm text-gray-500 mb-3">
+                  Burning tokens from {currentCompany.name}
+                </p>
+                <input
+                  type="number"
+                  className="px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-sky-500 block w-full rounded-md sm:text-sm focus:ring-1 mb-3"
+                  placeholder="Amount of tokens to burn"
+                  value={burnAmount}
+                  onChange={(e) => setBurnAmount(e.target.value)}
+                />
+              </div>
+              <div className="items-center px-4 py-3">
+                <button
+                  id="ok-btn"
+                  className="px-4 py-2 bg-orange-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-300"
+                  onClick={handleBurnTokens}
+                >
+                  Burn Tokens
+                </button>
+              </div>
+              <div className="items-center px-4 py-3">
+                <button
+                  id="cancel-btn"
+                  className="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                  onClick={() => setIsBurnDialogOpen(false)}
                 >
                   Cancel
                 </button>
