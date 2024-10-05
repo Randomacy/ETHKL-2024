@@ -8,6 +8,7 @@ import {
   FaMoneyBillWave,
   FaUserTie,
 } from "react-icons/fa";
+import companiesData from "./data/companies.json";
 
 interface Company {
   id: string;
@@ -16,65 +17,80 @@ interface Company {
   wallet: string;
 }
 
+interface Transaction {
+  id: string;
+  date: string; // assuming it's a Unix timestamp in seconds
+  value: string; // if tokenAmount is passed as 'value' in your API
+  from: string;
+  to: string;
+  status: string;
+}
+
 export default function BorderlessMaritimeFinance() {
   const [balance, setBalance] = useState("0.00");
   const [amount, setAmount] = useState("");
   const [recipient, setRecipient] = useState("");
-  const [transactionType, setTransactionType] = useState("exchange");
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [transactions, setTransactions] = useState([
-    {
-      id: 1,
-      date: "2024-04-10",
-      amount: "5000.00",
-      type: "Received from Ship Charter",
-      status: "Completed",
-    },
-    {
-      id: 2,
-      date: "2024-04-09",
-      amount: "3000.00",
-      type: "Paid to Ship Supplier",
-      status: "Completed",
-    },
-  ]);
+  const [transactionType, setTransactionType] = useState("pay");
+  const [companies, setCompanies] = useState<Company[]>(companiesData);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Get agent's wallet address from companiesData
+  const agentCompany = companies.find((company) => company.type === "agent");
+  const agentWalletAddress = agentCompany ? agentCompany.wallet : "";
 
   // API to fetch balance
   const fetchBalance = async () => {
     try {
       const response = await fetch(
-        `/api/transaction?action=balance&address=0x529354De2CAAcBB8Fa5f4A2F24Bf586427b8da5E`
+        `/api/transaction?action=balance&address=${agentWalletAddress}`
       );
       if (!response.ok) throw new Error("Failed to fetch balance");
       const data = await response.json();
-      console.log("Account has:", data.balance);
       setBalance(data.balance); // Sets the balance in two decimal places
     } catch (error) {
       console.error("Error fetching balance:", error);
     }
   };
 
-  // Fetch balance on component mount
+  // Fetch balance and transaction history on component mount
   useEffect(() => {
     fetchBalance();
-    fetchCompanies();
-  }, [transactionType]);
+    fetchTransactionHistory();
+  }, []);
 
-  const fetchCompanies = async () => {
-    let type = "";
-    if (transactionType === "pay") {
-      type = "supplier";
-    } else if (transactionType === "exchange") {
-      type = "agent";
+  // Function to fetch transaction history from the API
+  const fetchTransactionHistory = async () => {
+    try {
+      const response = await fetch("/api/history", {
+        method: "GET",
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+      });
+      const data = await response.json();
+      if (data.status === "success") {
+        // Update the transactions state
+        setTransactions(data.transactions); // Show only last 10 transactions
+      } else {
+        setError("Failed to fetch transaction history.");
+      }
+    } catch (err) {
+      console.error("Error fetching transaction history:", err);
+      setError("Failed to fetch transaction history.");
     }
-    const response = await fetch(`/api/transaction?type=${type}`);
-    const data = await response.json();
-    setCompanies(data);
   };
 
-  const handleTransaction = async (e) => {
+  // Function to get company name by wallet address
+  const getCompanyNameByWallet = (wallet: string) => {
+    const company = companies.find(
+      (company) => company.wallet.toLowerCase() === wallet.toLowerCase()
+    );
+    return company ? company.name : "Unknown";
+  };
+
+  const handleTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -98,7 +114,6 @@ export default function BorderlessMaritimeFinance() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            fromAddress: agentWalletAddress, // Replace with the agent's wallet address
             toAddress: supplier.wallet,
             amount: amount,
           }),
@@ -109,16 +124,9 @@ export default function BorderlessMaritimeFinance() {
           throw new Error(data.message || "Failed to transfer tokens");
         }
 
-        // Update balance and transaction history
+        // Refresh the transaction history after the transaction completes
+        fetchTransactionHistory();
         fetchBalance();
-        const newTransaction = {
-          id: transactions.length + 1,
-          date: new Date().toISOString().split("T")[0],
-          amount: amount,
-          type: `Paid to ${supplier.name}`,
-          status: "Completed",
-        };
-        setTransactions([newTransaction, ...transactions]);
 
         setSuccess(
           `Transaction completed successfully. TX Hash: ${data.txHash}`
@@ -126,12 +134,21 @@ export default function BorderlessMaritimeFinance() {
         setAmount("");
         setRecipient("");
       }
-      // Handle other transaction types if needed
     } catch (err) {
       console.error("Transaction failed:", err);
       setError(err.message || "Transaction failed. Please try again.");
     }
   };
+
+  // Filter companies based on transaction type
+  const filteredCompanies = companies.filter((company) => {
+    if (transactionType === "pay") {
+      return company.type === "supplier";
+    } else if (transactionType === "exchange") {
+      return company.type === "agent";
+    }
+    return false;
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -167,18 +184,18 @@ export default function BorderlessMaritimeFinance() {
             </h2>
             <div className="flex justify-around">
               <button
-                onClick={() => setTransactionType("exchange")}
-                className="flex flex-col items-center p-2 hover:bg-gray-100 rounded"
-              >
-                <FaExchangeAlt className="h-8 w-8 text-blue-500 mb-2" />
-                <span>Exchange</span>
-              </button>
-              <button
                 onClick={() => setTransactionType("pay")}
                 className="flex flex-col items-center p-2 hover:bg-gray-100 rounded"
               >
                 <FaMoneyBillWave className="h-8 w-8 text-green-500 mb-2" />
                 <span>Pay Supplier</span>
+              </button>
+              <button
+                onClick={() => setTransactionType("exchange")}
+                className="flex flex-col items-center p-2 hover:bg-gray-100 rounded"
+              >
+                <FaExchangeAlt className="h-8 w-8 text-blue-500 mb-2" />
+                <span>Exchange</span>
               </button>
               <button
                 onClick={() => setTransactionType("redeem")}
@@ -235,7 +252,7 @@ export default function BorderlessMaritimeFinance() {
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="">Select a company</option>
-                  {companies.map((company) => (
+                  {filteredCompanies.map((company) => (
                     <option key={company.id} value={company.id}>
                       {company.name}
                     </option>
@@ -269,32 +286,45 @@ export default function BorderlessMaritimeFinance() {
             Transaction History
           </h2>
           <ul className="space-y-4">
-            {transactions.map((tx) => (
-              <li
-                key={tx.id}
-                className="flex items-center justify-between border-b pb-2"
-              >
-                <div>
-                  <p className="font-medium">{tx.type}</p>
-                  <p className="text-sm text-gray-500">{tx.date}</p>
-                </div>
-                <div>
-                  <span
-                    className={`font-bold ${
-                      tx.type.includes("Received") ||
-                      tx.type.includes("Exchanged")
-                        ? "text-green-500"
-                        : "text-red-500"
-                    }`}
-                  >
-                    ${tx.amount}
-                  </span>
-                  <span className="ml-2 text-sm text-gray-500">
-                    {tx.status}
-                  </span>
-                </div>
-              </li>
-            ))}
+            {transactions.length > 0 ? (
+              transactions.slice(0, 10).map((tx) => (
+                <li
+                  key={tx.id}
+                  className="flex items-center justify-between border-b pb-2"
+                >
+                  <div>
+                    <p className="font-medium">
+                      {tx.from === "0x529354de2caacbb8fa5f4a2f24bf586427b8da5e"
+                        ? "Sent to"
+                        : "Received from"}
+                      :{" "}
+                      {tx.from === "0x529354de2caacbb8fa5f4a2f24bf586427b8da5e"
+                        ? getCompanyNameByWallet(tx.to)
+                        : getCompanyNameByWallet(tx.from)}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {new Date(parseInt(tx.date) * 1000).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div>
+                    <span
+                      className={`font-bold ${
+                        tx.from === agentWalletAddress
+                          ? "text-red-500"
+                          : "text-green-500"
+                      }`}
+                    >
+                      ${tx.tokenAmount}
+                    </span>
+                    <span className="ml-2 text-sm text-gray-500">
+                      {tx.status || "Completed"}
+                    </span>
+                  </div>
+                </li>
+              ))
+            ) : (
+              <li>No transactions found.</li>
+            )}
           </ul>
         </div>
       </main>
