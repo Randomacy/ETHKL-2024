@@ -74,7 +74,7 @@ export default function BorderlessMaritimeFinance() {
     setCompanies(data);
   };
 
-  const handleTransaction = async (e: React.FormEvent) => {
+  const handleTransaction = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -85,27 +85,51 @@ export default function BorderlessMaritimeFinance() {
     }
 
     try {
-      // Add new transaction to history
-      const newTransaction = {
-        id: transactions.length + 1,
-        date: new Date().toISOString().split("T")[0],
-        amount: amount,
-        type: `${
-          transactionType === "exchange"
-            ? "Exchanged"
-            : transactionType === "pay"
-            ? "Paid to"
-            : "Redeemed"
-        } ${recipient}`,
-        status: "Completed",
-      };
-      setTransactions([newTransaction, ...transactions]);
+      if (transactionType === "pay") {
+        // Get the recipient company's wallet address
+        const supplier = companies.find((company) => company.id === recipient);
+        if (!supplier) {
+          setError("Supplier not found.");
+          return;
+        }
 
-      setSuccess("Transaction completed successfully");
-      setAmount("");
-      setRecipient("");
+        // Call the API endpoint to transfer tokens
+        const response = await fetch("/api/transfer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fromAddress: agentWalletAddress, // Replace with the agent's wallet address
+            toAddress: supplier.wallet,
+            amount: amount,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to transfer tokens");
+        }
+
+        // Update balance and transaction history
+        fetchBalance();
+        const newTransaction = {
+          id: transactions.length + 1,
+          date: new Date().toISOString().split("T")[0],
+          amount: amount,
+          type: `Paid to ${supplier.name}`,
+          status: "Completed",
+        };
+        setTransactions([newTransaction, ...transactions]);
+
+        setSuccess(
+          `Transaction completed successfully. TX Hash: ${data.txHash}`
+        );
+        setAmount("");
+        setRecipient("");
+      }
+      // Handle other transaction types if needed
     } catch (err) {
-      setError("Transaction failed. Please try again.");
+      console.error("Transaction failed:", err);
+      setError(err.message || "Transaction failed. Please try again.");
     }
   };
 
