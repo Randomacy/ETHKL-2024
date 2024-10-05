@@ -22,5 +22,11 @@
     "name": "Ship Things Co.",
     "type": "supplier",
     "wallet": "0x2345678901234567890123456789012345678901"
+  },
+  {
+    "id": "borderlessteam",
+    "name": "Borderless Team",
+    "type": "hq",
+    "wallet": "0x0000000000000000000000000000000000000000"
   }
 ]
